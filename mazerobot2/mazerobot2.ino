@@ -1,3 +1,5 @@
+#include <Servo.h>
+
 const bool straight[] = {false,false,true,false,false};
 const bool left[] = {true,true,true,false,false};
 const bool right[] = {false,false,true,true,true};
@@ -8,61 +10,116 @@ enum Ttypes{northlong,northflat,northshort};
 enum direc{LEFT,RIGHT};
 enum Tblocks{tl,tr,tt,tb}; //short end on left(tl), right (tr), top (tt), bottom (tb)
 
+Servo Lservo;
+Servo Rservo;
+int Lpos = 0;
+int Rpos = 0;
+
 void setup() {
   Serial.begin(9600);
+
+  Lservo.attach(3);
+  Rservo.attach(2);
+  Lservo.write(90);
+  Rservo.write(90);
   
   DDRC = DDRC | 0x0;
   pinMode(5, INPUT);
-
+  /*
   Serial.println("Waiting for signal");
-  while(digitalRead(5) != HIGH);
+  while(digitalRead(5) != HIGH);*/
   Serial.println("Program started.");
 }
 
 String decisions = "";
 char compass = 'n';
 bool backToDecision = false;
-bool current[] = {false,false,false,false,false};
+bool current[5];
 
 void loop() {
    measure();
 
-   if(compare(current, straight)){
-    advance();
+   for(int i = 0; i <= 4; i++){
+    if(current[i] == true){
+      Serial.print("1   ");
+    }
+    else{
+      Serial.print("0   ");
+    }
    }
-   else if(compare(current,left)){
+   Serial.print("\n");
+
+   if(grab(straight)){
+    advance();
+    Serial.println("STRAIGHT");
+   }
+   else if(grab(left)){
     inch();
     measure();
-    if(compare(current, straight)){
-      getType(tl, compass);
-      if(decisions != ""){
-        decisions[sizeof(decisions)] = 'j';
-      }
+    if(grab(straight)){
+      //tl case
     }
-    
+    else{
+      turn(direc::LEFT);
+      Serial.println("LEFT TURN");
+    }
+   }
+   else if(grab(right)){
+    inch();
+    measure();
+    if(grab(straight)){
+      //tl case
+    }
+    else{
+      turn(direc::RIGHT);
+      Serial.println("LEFT TURN");
+    }
+   }
+   else{
+    Lservo.write(90);
+    Rservo.write(90);
    }
 }
 
 void advance(){
-  //code for moving forward
+  Lservo.write(40);
+  Rservo.write(140);
 }
 
 void inch(){
   //code for going forward slightly to check for decision
 }
 
-void turn(direc dir, int angle){
+void turn(direc dir){
   //code for making a turn
   switch(dir){
     case direc::LEFT:
-      compassUpdate(dir, angle);
+      Lservo.write(40);
+      Rservo.write(140);
+      delay(10);
+      Lservo.write(90);
+      Rservo.write(90);
+      break;
+    case direc::RIGHT:
+      Lservo.write(140);
+      Rservo.write(40);
+      delay(10);
+      Lservo.write(90);
+      Rservo.write(90);
       break;
   }
 }
 void measure(){
-  for(int pin = 14; pin <= 19; pin++){
-    if(analogRead(pin) < 800) current[pin - 14] = true;
-    else current[pin - 14] = false;
+  int raw[5];
+  raw[0] = analogRead(A1);
+  raw[1] = analogRead(A2);
+  raw[2] = analogRead(A3);
+  raw[3] = analogRead(A4);
+  raw[4] = analogRead(A5);
+  
+  for(int pin = 0; pin <= 4; pin++){
+    if(raw[pin] < 800) current[pin] = true;
+    else current[pin] = false;
   }
 }
 void compassUpdate(direc dir, int angle){
@@ -159,9 +216,28 @@ Ttypes getType(Tblocks in, char compassdir){
 bool compare(bool * in1, bool * in2){
   if(sizeof(in1) != sizeof(in2)) return false;
 
-  for(int i = 0; i < sizeof(in1); i++){
+  for(int i = 0; i <= sizeof(in1); i++){
     if(in1[i] != in2[i]) return false;
   }
 
   return true;
 }
+
+bool grab(bool * comparison){
+  int n =5;
+  int m =5;
+  if (n != m) 
+    return false; 
+  
+    sort(arr1, arr1+n); 
+    sort(arr2, arr2+m); 
+  
+    // Linearly compare elements 
+    for (int i=0; i<n; i++) 
+         if (arr1[i] != arr2[i]) 
+            return false; 
+  
+    // If all elements were same. 
+    return true; 
+}
+
