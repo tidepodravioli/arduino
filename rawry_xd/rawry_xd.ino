@@ -12,6 +12,11 @@ Servo Lservo;
 Servo Rservo;
 
 String serialQueue = "";
+/* I decided to use a serial queue instead of a Serial.print() call to show results all at the same time instead of waiting for each
+ *  process to do it's thing. 
+ *  
+ *  At the end of the loop() iteration, this string is printed as one Serial.println()
+ */
 void setup() {
   Serial.begin(9600);
   Serial.println("Init started..");
@@ -32,12 +37,11 @@ void setup() {
 }
 
 void loop() {
-   int current = 0;
-   for (int i=0; i < 10; i++) {
-   current = current + mes();
-   }
-   current = current/10;
-  serialQueue += (int2bin(current));
+   int current = 0; //creates a variable that holds the current averaged value
+   for (int i=0; i < 10; i++) current = current + mes(); //collects and adds up 10 iterations of the sensor value
+   current = current/10; //averages the collected values
+   serialQueue += (int2dots(current) + "   ");
+   serialQueue += (int2bin(current));//sends off the averaged values over to the serial queue
   
   if(current == left){
     serialQueue += ("   LEFT");
@@ -48,16 +52,14 @@ void loop() {
     mov(RIGHT);
   }
   else if(current == full){
-    if(win()){
-      
-    }
-    else{
-      mov(INCH);
-      mov(LEFT);
-    }
+    mov(INCH);
+    mov(LEFT);
   }
   else if(current == straight){
     mov(STRAIGHT);
+  }
+  else{
+    correct(current);
   }
 
   Serial.println(serialQueue);
